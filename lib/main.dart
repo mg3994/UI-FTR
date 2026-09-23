@@ -5,18 +5,21 @@ import 'src/models/json_ld_node.dart';
 import 'src/models/json_ld_value.dart';
 import 'src/state/json_ld_store.dart';
 import 'src/utils/json_ld_presets.dart';
+import 'src/utils/schema_code_generator.dart';
 import 'src/utils/vocabulary_analyzer.dart';
 import 'src/widgets/complex_event_widget.dart';
 import 'src/widgets/datatype_renderers.dart';
 import 'src/widgets/person_widget.dart';
+import 'src/widgets/place_widget.dart';
 import 'src/widgets/product_widget.dart';
+import 'src/widgets/recipe_widget.dart';
+import 'src/widgets/review_widget.dart';
 import 'src/widgets/vocabulary_explorer_widget.dart';
 import 'src/widgets/widget_registry.dart';
 
 void main() {
   final registry = JsonLdWidgetRegistry();
 
-  // Register schema:Event
   registry.register('schema:Event', (context, node,
       {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
     return ComplexEventWidget(
@@ -29,7 +32,6 @@ void main() {
   });
   registry.register('Event', registry.lookup(['schema:Event'])!);
 
-  // Register schema:Product
   registry.register('schema:Product', (context, node,
       {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
     return ProductWidget(
@@ -42,7 +44,6 @@ void main() {
   });
   registry.register('Product', registry.lookup(['schema:Product'])!);
 
-  // Register schema:Person
   registry.register('schema:Person', (context, node,
       {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
     return PersonWidget(
@@ -54,6 +55,42 @@ void main() {
     );
   });
   registry.register('Person', registry.lookup(['schema:Person'])!);
+
+  registry.register('schema:Recipe', (context, node,
+      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
+    return RecipeWidget(
+      node: node,
+      isEditable: isEditable,
+      activeLanguage: activeLanguage,
+      onChanged: onChanged,
+      onNodeTap: onNodeTap,
+    );
+  });
+  registry.register('Recipe', registry.lookup(['schema:Recipe'])!);
+
+  registry.register('schema:Place', (context, node,
+      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
+    return PlaceWidget(
+      node: node,
+      isEditable: isEditable,
+      activeLanguage: activeLanguage,
+      onChanged: onChanged,
+      onNodeTap: onNodeTap,
+    );
+  });
+  registry.register('Place', registry.lookup(['schema:Place'])!);
+
+  registry.register('schema:Review', (context, node,
+      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
+    return ReviewWidget(
+      node: node,
+      isEditable: isEditable,
+      activeLanguage: activeLanguage,
+      onChanged: onChanged,
+      onNodeTap: onNodeTap,
+    );
+  });
+  registry.register('Review', registry.lookup(['schema:Review'])!);
 
   runApp(const JsonLdArchitectureApp());
 }
@@ -119,28 +156,17 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
         "rdfs:comment": "Any offered product or service."
       },
       {
+        "@id": "https://schema.org/Recipe",
+        "@type": "rdfs:Class",
+        "rdfs:label": "Recipe",
+        "rdfs:comment": "A recipe for food/drink."
+      },
+      {
         "@id": "https://schema.org/name",
         "@type": "rdf:Property",
         "rdfs:label": "name",
         "rdfs:comment": "The name of the item.",
-        "schema:domainIncludes": [{"@id": "https://schema.org/Event"}, {"@id": "https://schema.org/Person"}, {"@id": "https://schema.org/Product"}],
-        "schema:rangeIncludes": [{"@id": "https://schema.org/Text"}]
-      },
-      {
-        "@id": "https://schema.org/startDate",
-        "@type": "rdf:Property",
-        "rdfs:label": "startDate",
-        "rdfs:comment": "The start date and time of the item.",
-        "schema:domainIncludes": [{"@id": "https://schema.org/Event"}],
-        "schema:rangeIncludes": [{"@id": "https://schema.org/Date"}, {"@id": "https://schema.org/DateTime"}]
-      },
-      {
-        "@id": "https://schema.org/performer",
-        "@type": "rdf:Property",
-        "rdfs:label": "performer",
-        "rdfs:comment": "A performer in an event.",
-        "schema:domainIncludes": [{"@id": "https://schema.org/Event"}],
-        "schema:rangeIncludes": [{"@id": "https://schema.org/Person"}]
+        "schema:domainIncludes": [{"@id": "https://schema.org/Event"}, {"@id": "https://schema.org/Person"}, {"@id": "https://schema.org/Product"}]
       }
     ]
   };
@@ -149,7 +175,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
   void initState() {
     super.initState();
     _store = JsonLdStore();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadPreset(_selectedPreset);
     _indexVocabularySchema(_sampleSchemaOrgVocabPayload);
   }
@@ -195,13 +221,13 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
             bottom: TabBar(
               controller: _tabController,
               tabs: const [
-                Tab(icon: Icon(Icons.dashboard), text: 'Instance Renderer/Editor'),
-                Tab(icon: Icon(Icons.schema), text: 'Schema.org Vocabulary Explorer'),
-                Tab(icon: Icon(Icons.code), text: 'Raw JSON-LD / Import'),
+                Tab(icon: Icon(Icons.dashboard), text: 'Instance Renderer'),
+                Tab(icon: Icon(Icons.schema), text: 'Schema.org Explorer'),
+                Tab(icon: Icon(Icons.code), text: 'Raw JSON Source'),
+                Tab(icon: Icon(Icons.data_object), text: 'Dart Code Generator'),
               ],
             ),
             actions: [
-              // Preset Selector
               DropdownButton<String>(
                 value: _selectedPreset,
                 underline: const SizedBox.shrink(),
@@ -219,7 +245,6 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                 },
               ),
               const SizedBox(width: 8),
-              // Language Switcher
               DropdownButton<String>(
                 value: _activeLanguage,
                 underline: const SizedBox.shrink(),
@@ -238,7 +263,6 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                 },
               ),
               const SizedBox(width: 8),
-              // Edit Mode Switch
               Row(
                 children: [
                   const Text('Edit Mode'),
@@ -287,6 +311,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                 },
               ),
               _buildRawJsonTab(),
+              _buildCodeGeneratorTab(currentNode),
             ],
           ),
         );
@@ -431,6 +456,58 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Paste any JSON-LD document or vocabulary file here...',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCodeGeneratorTab(JsonLdNode? currentNode) {
+    if (currentNode == null) {
+      return const Center(child: Text('No active node loaded to generate code for.'));
+    }
+
+    final dartCode = JsonLdSchemaCodeGenerator.generateDartClass(
+      currentNode.primaryType,
+      currentNode.properties,
+    );
+
+    final widgetCode = JsonLdSchemaCodeGenerator.generateWidgetRegistrationCode(
+      currentNode.primaryType,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Auto-Generated Dart Code for ${currentNode.primaryType}:',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.copy),
+                label: const Text('Copy Generated Code'),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: '$dartCode\n\n$widgetCode'));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Copied Dart code to clipboard!')),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: SingleChildScrollView(
+              child: SelectableText(
+                '$dartCode\n\n$widgetCode',
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
               ),
             ),
           ),

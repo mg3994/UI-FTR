@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:app/src/models/json_ld_node.dart';
-import 'package:app/src/widgets/complex_event_widget.dart';
-import 'package:app/src/widgets/person_widget.dart';
-import 'package:app/src/widgets/product_widget.dart';
-import 'package:app/src/widgets/widget_registry.dart';
+import 'package:app/json_ld_framework.dart';
 
 void main() {
   group('JSON-LD Widget Tests', () {
@@ -64,19 +60,19 @@ void main() {
       expect(find.text('TechCorp'), findsOneWidget);
     });
 
-    testWidgets('Renders PersonWidget with jobTitle and worksFor', (WidgetTester tester) async {
-      final personNode = JsonLdNode.fromJson({
-        "@type": "schema:Person",
-        "schema:name": "Jules Architect",
-        "schema:jobTitle": "Lead UI Architect",
-        "schema:worksFor": "Global Tech"
+    testWidgets('Renders RecipeWidget with ingredients and instructions', (WidgetTester tester) async {
+      final recipeNode = JsonLdNode.fromJson({
+        "@type": "schema:Recipe",
+        "schema:name": "Gourmet Pasta",
+        "schema:prepTime": "PT10M",
+        "schema:recipeIngredient": ["Spaghetti", "Parmesan"]
       });
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: PersonWidget(
-              node: personNode,
+            body: RecipeWidget(
+              node: recipeNode,
               isEditable: false,
               activeLanguage: 'en',
             ),
@@ -84,9 +80,31 @@ void main() {
         ),
       );
 
-      expect(find.text('Jules Architect'), findsOneWidget);
-      expect(find.text('Lead UI Architect'), findsOneWidget);
-      expect(find.text('Works at: Global Tech'), findsOneWidget);
+      expect(find.text('Gourmet Pasta'), findsOneWidget);
+      expect(find.text('Prep: PT10M'), findsOneWidget);
+    });
+
+    testWidgets('Renders PlaceWidget with address', (WidgetTester tester) async {
+      final placeNode = JsonLdNode.fromJson({
+        "@type": "schema:Place",
+        "schema:name": "Central Park",
+        "schema:address": "New York, NY"
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PlaceWidget(
+              node: placeNode,
+              isEditable: false,
+              activeLanguage: 'en',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Central Park'), findsOneWidget);
+      expect(find.text('New York, NY'), findsOneWidget);
     });
 
     testWidgets('WidgetRegistry correctly looks up registered type builders', (WidgetTester tester) async {

@@ -3,6 +3,7 @@ library json_ld_framework;
 // Core Models
 export 'src/models/json_ld_node.dart';
 export 'src/models/json_ld_value.dart';
+export 'src/models/json_ld_context.dart';
 
 // State & Navigation Store
 export 'src/state/json_ld_store.dart';
@@ -11,9 +12,10 @@ export 'src/state/json_ld_store.dart';
 export 'src/validation/json_ld_schema_validator.dart';
 export 'src/utils/schema_code_generator.dart';
 
-// Utilities & Analyzer
+// Utilities, Analyzer & Processor
 export 'src/utils/vocabulary_analyzer.dart';
 export 'src/utils/json_ld_presets.dart';
+export 'src/utils/json_ld_processor.dart';
 
 // Theme Framework
 export 'src/theme/json_ld_theme.dart';
@@ -27,4 +29,7 @@ export 'src/widgets/responsive_layout.dart';
 export 'src/widgets/complex_event_widget.dart';
 export 'src/widgets/product_widget.dart';
 export 'src/widgets/person_widget.dart';
+export 'src/widgets/recipe_widget.dart';
+export 'src/widgets/place_widget.dart';
+export 'src/widgets/review_widget.dart';
 export 'src/widgets/vocabulary_explorer_widget.dart';

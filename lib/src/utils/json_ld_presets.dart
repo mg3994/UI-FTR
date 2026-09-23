@@ -99,6 +99,48 @@ class JsonLdPresets {
       "schema:email": "ada@example.com",
       "schema:image": "https://picsum.photos/200/200",
       "schema:sameAs": "https://en.wikipedia.org/wiki/Ada_Lovelace"
+    },
+    'Gourmet Recipe': {
+      "@context": "https://schema.org",
+      "@type": "schema:Recipe",
+      "@id": "https://example.com/recipes/pasta-carbonara",
+      "schema:name": "Authentic Italian Pasta Carbonara",
+      "schema:description": "Classic Roman pasta dish made with eggs, hard cheese, cured pork, and black pepper.",
+      "schema:prepTime": "PT15M",
+      "schema:cookTime": "PT20M",
+      "schema:recipeYield": "4 servings",
+      "schema:image": "https://picsum.photos/600/350",
+      "schema:recipeIngredient": [
+        "400g Spaghetti",
+        "150g Guanciale or Pancetta",
+        "4 large fresh egg yolks",
+        "50g Pecorino Romano cheese",
+        "Freshly cracked black pepper"
+      ],
+      "schema:recipeInstructions": [
+        "Boil spaghetti in salted water until al dente.",
+        "Crisp guanciale in a large skillet over medium heat.",
+        "Whisk egg yolks with grated Pecorino Romano and pepper in a bowl.",
+        "Combine hot pasta with guanciale and egg mixture off heat until creamy."
+      ]
+    },
+    'User Review': {
+      "@context": "https://schema.org",
+      "@type": "schema:Review",
+      "@id": "https://example.com/reviews/101",
+      "schema:reviewBody": "Outstanding Flutter framework for dynamic JSON-LD rendering! Super easy to extend.",
+      "schema:reviewRating": {
+        "@type": "schema:Rating",
+        "schema:ratingValue": 5.0
+      },
+      "schema:author": {
+        "@type": "schema:Person",
+        "schema:name": "Senior Software Reviewer"
+      },
+      "schema:itemReviewed": {
+        "@type": "schema:Product",
+        "schema:name": "Flutter JSON-LD Framework"
+      }
     }
   };
 }
