@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'src/models/json_ld_node.dart';
 import 'src/models/json_ld_value.dart';
@@ -5,10 +6,10 @@ import 'src/state/json_ld_store.dart';
 import 'src/utils/vocabulary_analyzer.dart';
 import 'src/widgets/complex_event_widget.dart';
 import 'src/widgets/datatype_renderers.dart';
+import 'src/widgets/vocabulary_explorer_widget.dart';
 import 'src/widgets/widget_registry.dart';
 
 void main() {
-  // Register custom complex widget for schema:Event or Event
   final registry = JsonLdWidgetRegistry();
   registry.register('schema:Event', (context, node,
       {required isEditable,
@@ -51,12 +52,17 @@ class JsonLdHomePage extends StatefulWidget {
   State<JsonLdHomePage> createState() => _JsonLdHomePageState();
 }
 
-class _JsonLdHomePageState extends State<JsonLdHomePage> {
+class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProviderStateMixin {
   late final JsonLdStore _store;
+  late final TabController _tabController;
+  final TextEditingController _rawJsonTextController = TextEditingController();
+
   bool _isEditable = false;
   String _activeLanguage = 'en';
 
-  // Sample Complex JSON-LD document with localization, graph, and @id references
+  Map<String, SchemaClassTerm> _indexedClasses = {};
+  Map<String, SchemaPropertyTerm> _indexedProperties = {};
+
   static const Map<String, dynamic> _sampleJsonLdPayload = {
     "@context": {
       "schema": "https://schema.org/",
@@ -112,8 +118,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> {
         "@type": "schema:Place",
         "schema:name": "Silicon Valley Convention Center (Detail Page)",
         "schema:address": "150 San Carlos St, San Jose, CA 95113",
-        "schema:telephone": "+1-408-555-0199",
-        "schema:maximumAttendeeCapacity": 5000
+        "schema:telephone": "+1-408-555-0199"
       },
       {
         "@id": "https://example.com/people/jules-architect",
@@ -126,16 +131,85 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> {
     ]
   };
 
+  static const Map<String, dynamic> _sampleSchemaOrgVocabPayload = {
+    "@context": {
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+      "schema": "https://schema.org/"
+    },
+    "@graph": [
+      {
+        "@id": "https://schema.org/Event",
+        "@type": "rdfs:Class",
+        "rdfs:label": "Event",
+        "rdfs:comment": "An event happening at a certain time and location, such as a concert or lecture."
+      },
+      {
+        "@id": "https://schema.org/Person",
+        "@type": "rdfs:Class",
+        "rdfs:label": "Person",
+        "rdfs:comment": "A person (alive, dead, undead, or fictional)."
+      },
+      {
+        "@id": "https://schema.org/Product",
+        "@type": "rdfs:Class",
+        "rdfs:label": "Product",
+        "rdfs:comment": "Any offered product or service."
+      },
+      {
+        "@id": "https://schema.org/name",
+        "@type": "rdf:Property",
+        "rdfs:label": "name",
+        "rdfs:comment": "The name of the item.",
+        "schema:domainIncludes": [{"@id": "https://schema.org/Event"}, {"@id": "https://schema.org/Person"}, {"@id": "https://schema.org/Product"}],
+        "schema:rangeIncludes": [{"@id": "https://schema.org/Text"}]
+      },
+      {
+        "@id": "https://schema.org/startDate",
+        "@type": "rdf:Property",
+        "rdfs:label": "startDate",
+        "rdfs:comment": "The start date and time of the item.",
+        "schema:domainIncludes": [{"@id": "https://schema.org/Event"}],
+        "schema:rangeIncludes": [{"@id": "https://schema.org/Date"}, {"@id": "https://schema.org/DateTime"}]
+      },
+      {
+        "@id": "https://schema.org/performer",
+        "@type": "rdf:Property",
+        "rdfs:label": "performer",
+        "rdfs:comment": "A performer in an event.",
+        "schema:domainIncludes": [{"@id": "https://schema.org/Event"}],
+        "schema:rangeIncludes": [{"@id": "https://schema.org/Person"}]
+      }
+    ]
+  };
+
   @override
   void initState() {
     super.initState();
     _store = JsonLdStore();
-    _store.loadDocument(_sampleJsonLdPayload);
+    _tabController = TabController(length: 3, vsync: this);
+    _loadSamplePayload(_sampleJsonLdPayload);
+    _indexVocabularySchema(_sampleSchemaOrgVocabPayload);
+  }
+
+  void _loadSamplePayload(Map<String, dynamic> payload) {
+    _store.loadDocument(payload);
+    _rawJsonTextController.text = const JsonEncoder.withIndent('  ').convert(payload);
+  }
+
+  void _indexVocabularySchema(dynamic vocabPayload) {
+    final parsed = VocabularyAnalyzer.parseVocabularySchema(vocabPayload);
+    setState(() {
+      _indexedClasses = parsed['classes'] as Map<String, SchemaClassTerm>;
+      _indexedProperties = parsed['properties'] as Map<String, SchemaPropertyTerm>;
+    });
   }
 
   @override
   void dispose() {
     _store.dispose();
+    _tabController.dispose();
+    _rawJsonTextController.dispose();
     super.dispose();
   }
 
@@ -145,23 +219,19 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> {
       valueListenable: _store,
       builder: (context, state, child) {
         final currentNode = state.currentNode;
-        final docType = VocabularyAnalyzer.detectDocumentType(_sampleJsonLdPayload);
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(
-              state.navigationStack.isNotEmpty
-                  ? 'Detail View'
-                  : 'JSON-LD Architecture Demo',
+            title: const Text('Flutter JSON-LD Architecture & Schema.org Platform'),
+            bottom: TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(icon: Icon(Icons.dashboard), text: 'Instance Renderer/Editor'),
+                Tab(icon: Icon(Icons.schema), text: 'Schema.org Vocabulary Explorer'),
+                Tab(icon: Icon(Icons.code), text: 'Raw JSON-LD / Import'),
+              ],
             ),
-            leading: state.navigationStack.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => _store.popNavigation(),
-                  )
-                : null,
             actions: [
-              // Language Switcher Dropdown
               DropdownButton<String>(
                 value: _activeLanguage,
                 underline: const SizedBox.shrink(),
@@ -180,10 +250,9 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> {
                 },
               ),
               const SizedBox(width: 8),
-              // Edit Mode Switch
               Row(
                 children: [
-                  const Text('Edit'),
+                  const Text('Edit Mode'),
                   Switch(
                     value: _isEditable,
                     onChanged: (val) {
@@ -197,67 +266,64 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> {
               const SizedBox(width: 12),
             ],
           ),
-          body: state.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : state.error != null
-                  ? Center(child: Text('Error: ${state.error}'))
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAlignment.start,
-                        children: [
-                          _buildDocTypeBanner(docType),
-                          const SizedBox(height: 12),
-                          if (currentNode != null)
-                            _renderNode(context, currentNode)
-                          else
-                            const Text('No content available.'),
-                        ],
-                      ),
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              // Tab 1: Instance Data UI Renderer / Editor
+              _buildInstanceRendererTab(state, currentNode),
+
+              // Tab 2: Schema Vocabulary Explorer
+              VocabularyExplorerWidget(
+                classes: _indexedClasses,
+                properties: _indexedProperties,
+                onInstantiateClass: (template) {
+                  _loadSamplePayload(template);
+                  _tabController.animateTo(0); // Switch to Instance Renderer
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Generated editable UI instance for ${template['@type']}'),
+                      duration: const Duration(seconds: 3),
                     ),
+                  );
+                },
+              ),
+
+              // Tab 3: Raw JSON-LD Import / Inspection
+              _buildRawJsonTab(),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildDocTypeBanner(JsonLdDocumentType docType) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: docType == JsonLdDocumentType.vocabulary
-            ? Colors.orange.shade100
-            : Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: docType == JsonLdDocumentType.vocabulary
-              ? Colors.orange
-              : Colors.blue,
-        ),
-      ),
-      child: Row(
+  Widget _buildInstanceRendererTab(JsonLdState state, JsonLdNode? currentNode) {
+    if (state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.error != null) {
+      return Center(child: Text('Error: ${state.error}'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAlignment.start,
         children: [
-          Icon(
-            docType == JsonLdDocumentType.vocabulary
-                ? Icons.schema
-                : Icons.data_object,
-            color: docType == JsonLdDocumentType.vocabulary
-                ? Colors.orange.shade800
-                : Colors.blue.shade800,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              docType == JsonLdDocumentType.vocabulary
-                  ? 'Detected Schema Vocabulary Document (rdfs:Class / rdf:Property definition source)'
-                  : 'Detected JSON-LD Instance Document payload',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: docType == JsonLdDocumentType.vocabulary
-                    ? Colors.orange.shade900
-                    : Colors.blue.shade900,
+          if (state.navigationStack.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Back to Root Node'),
+                onPressed: () => _store.popNavigation(),
               ),
             ),
-          ),
+          if (currentNode != null)
+            _renderNode(context, currentNode)
+          else
+            const Text('No content available.'),
         ],
       ),
     );
@@ -290,8 +356,8 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> {
       );
     }
 
-    // Generic fallback renderer for unknown or generic nodes
     return Card(
+      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -299,7 +365,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> {
           children: [
             Text(
               'Node Type: ${node.primaryType}',
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             if (node.id != null) Text('ID: ${node.id}'),
             const Divider(),
@@ -318,6 +384,60 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> {
             }),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRawJsonTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAlignment: CrossAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'JSON-LD Source / Raw Editor:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Parse & Render Payload'),
+                onPressed: () {
+                  try {
+                    final decoded = json.decode(_rawJsonTextController.text);
+                    final docType = VocabularyAnalyzer.detectDocumentType(decoded);
+                    if (docType == JsonLdDocumentType.vocabulary) {
+                      _indexVocabularySchema(decoded);
+                      _tabController.animateTo(1); // Move to Schema Explorer
+                    } else {
+                      _store.loadDocument(decoded);
+                      _tabController.animateTo(0); // Move to Instance Renderer
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Invalid JSON-LD Syntax: $e')),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: TextField(
+              controller: _rawJsonTextController,
+              maxLines: null,
+              expands: true,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Paste any JSON-LD document or vocabulary file here...',
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

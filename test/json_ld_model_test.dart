@@ -65,9 +65,16 @@ void main() {
       final vocabPayload = {
         "@graph": [
           {
-            "@id": "http://schema.org/Person",
+            "@id": "https://schema.org/Person",
             "@type": "rdfs:Class",
+            "rdfs:label": "Person",
             "rdfs:comment": "A person."
+          },
+          {
+            "@id": "https://schema.org/name",
+            "@type": "rdf:Property",
+            "rdfs:label": "name",
+            "schema:domainIncludes": [{"@id": "https://schema.org/Person"}]
           }
         ]
       };
@@ -75,8 +82,16 @@ void main() {
       final docType = VocabularyAnalyzer.detectDocumentType(vocabPayload);
       expect(docType, equals(JsonLdDocumentType.vocabulary));
 
-      final terms = VocabularyAnalyzer.extractVocabularyTerms(vocabPayload);
-      expect(terms['classes'], contains("http://schema.org/Person"));
+      final parsed = VocabularyAnalyzer.parseVocabularySchema(vocabPayload);
+      final classes = parsed['classes'] as Map<String, SchemaClassTerm>;
+      final properties = parsed['properties'] as Map<String, SchemaPropertyTerm>;
+
+      expect(classes.containsKey("https://schema.org/Person"), isTrue);
+      expect(properties.containsKey("https://schema.org/name"), isTrue);
+
+      final template = VocabularyAnalyzer.generateInstanceTemplate("https://schema.org/Person", properties);
+      expect(template['@type'], equals('Person'));
+      expect(template.containsKey('schema:name'), isTrue);
     });
   });
 }
