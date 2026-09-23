@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app/src/models/json_ld_node.dart';
 import 'package:app/src/widgets/complex_event_widget.dart';
+import 'package:app/src/widgets/person_widget.dart';
+import 'package:app/src/widgets/product_widget.dart';
 import 'package:app/src/widgets/widget_registry.dart';
-import 'package:app/src/widgets/datatype_renderers.dart';
 
 void main() {
   group('JSON-LD Widget Tests', () {
@@ -19,7 +20,6 @@ void main() {
         "schema:startDate": "2026-11-01"
       });
 
-      // 1. Test Read-Only rendering
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -34,21 +34,59 @@ void main() {
 
       expect(find.text('Tech Summit 2026'), findsOneWidget);
       expect(find.text('Annual technology conference'), findsOneWidget);
+    });
 
-      // 2. Test Editable mode rendering
+    testWidgets('Renders ProductWidget with brand and offer details', (WidgetTester tester) async {
+      final productNode = JsonLdNode.fromJson({
+        "@type": "schema:Product",
+        "schema:name": "Developer Laptop Pro",
+        "schema:brand": "TechCorp",
+        "schema:description": "High performance workstation",
+        "schema:offers": {
+          "@type": "schema:Offer",
+          "schema:price": 1999.99
+        }
+      });
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: ComplexEventWidget(
-              node: eventNode,
-              isEditable: true,
+            body: ProductWidget(
+              node: productNode,
+              isEditable: false,
               activeLanguage: 'en',
             ),
           ),
         ),
       );
 
-      expect(find.byType(TextFormField), findsAtLeastNWidgets(2));
+      expect(find.text('Developer Laptop Pro'), findsOneWidget);
+      expect(find.text('TechCorp'), findsOneWidget);
+    });
+
+    testWidgets('Renders PersonWidget with jobTitle and worksFor', (WidgetTester tester) async {
+      final personNode = JsonLdNode.fromJson({
+        "@type": "schema:Person",
+        "schema:name": "Jules Architect",
+        "schema:jobTitle": "Lead UI Architect",
+        "schema:worksFor": "Global Tech"
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PersonWidget(
+              node: personNode,
+              isEditable: false,
+              activeLanguage: 'en',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Jules Architect'), findsOneWidget);
+      expect(find.text('Lead UI Architect'), findsOneWidget);
+      expect(find.text('Works at: Global Tech'), findsOneWidget);
     });
 
     testWidgets('WidgetRegistry correctly looks up registered type builders', (WidgetTester tester) async {

@@ -1,21 +1,24 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'src/models/json_ld_node.dart';
 import 'src/models/json_ld_value.dart';
 import 'src/state/json_ld_store.dart';
+import 'src/utils/json_ld_presets.dart';
 import 'src/utils/vocabulary_analyzer.dart';
 import 'src/widgets/complex_event_widget.dart';
 import 'src/widgets/datatype_renderers.dart';
+import 'src/widgets/person_widget.dart';
+import 'src/widgets/product_widget.dart';
 import 'src/widgets/vocabulary_explorer_widget.dart';
 import 'src/widgets/widget_registry.dart';
 
 void main() {
   final registry = JsonLdWidgetRegistry();
+
+  // Register schema:Event
   registry.register('schema:Event', (context, node,
-      {required isEditable,
-      required activeLanguage,
-      onChanged,
-      onNodeTap}) {
+      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
     return ComplexEventWidget(
       node: node,
       isEditable: isEditable,
@@ -25,6 +28,32 @@ void main() {
     );
   });
   registry.register('Event', registry.lookup(['schema:Event'])!);
+
+  // Register schema:Product
+  registry.register('schema:Product', (context, node,
+      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
+    return ProductWidget(
+      node: node,
+      isEditable: isEditable,
+      activeLanguage: activeLanguage,
+      onChanged: onChanged,
+      onNodeTap: onNodeTap,
+    );
+  });
+  registry.register('Product', registry.lookup(['schema:Product'])!);
+
+  // Register schema:Person
+  registry.register('schema:Person', (context, node,
+      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
+    return PersonWidget(
+      node: node,
+      isEditable: isEditable,
+      activeLanguage: activeLanguage,
+      onChanged: onChanged,
+      onNodeTap: onNodeTap,
+    );
+  });
+  registry.register('Person', registry.lookup(['schema:Person'])!);
 
   runApp(const JsonLdArchitectureApp());
 }
@@ -59,77 +88,10 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
 
   bool _isEditable = false;
   String _activeLanguage = 'en';
+  String _selectedPreset = 'Complex Event (Localized)';
 
   Map<String, SchemaClassTerm> _indexedClasses = {};
   Map<String, SchemaPropertyTerm> _indexedProperties = {};
-
-  static const Map<String, dynamic> _sampleJsonLdPayload = {
-    "@context": {
-      "schema": "https://schema.org/",
-      "name": "schema:name",
-      "description": "schema:description",
-      "startDate": "schema:startDate",
-      "location": "schema:location",
-      "performer": "schema:performer"
-    },
-    "@graph": [
-      {
-        "@id": "https://example.com/events/flutter-con-2026",
-        "@type": "schema:Event",
-        "schema:name": [
-          {"@value": "Flutter Global Conference 2026", "@language": "en"},
-          {"@value": "Conferencia Global de Flutter 2026", "@language": "es"},
-          {"@value": "مؤتمر فلاتر العالمي 2026", "@language": "ar", "@direction": "rtl"}
-        ],
-        "schema:description": [
-          {
-            "@value": "Join developers worldwide for the ultimate Flutter architecture summit.",
-            "@language": "en"
-          },
-          {
-            "@value": "Únete a desarrolladores de todo el mundo para la cumbre de arquitectura Flutter.",
-            "@language": "es"
-          },
-          {
-            "@value": "انضم إلى المطورين من جميع أنحاء العالم في قمة هندسة برمجيات فلاتر.",
-            "@language": "ar",
-            "@direction": "rtl"
-          }
-        ],
-        "schema:startDate": "2026-10-15T09:00:00Z",
-        "schema:endDate": "2026-10-17T18:00:00Z",
-        "schema:image": "https://picsum.photos/600/300",
-        "schema:url": "https://flutter.dev",
-        "schema:location": {
-          "@id": "https://example.com/places/convention-center",
-          "@type": "schema:Place",
-          "schema:name": "Silicon Valley Convention Center",
-          "schema:address": "San Jose, CA, USA"
-        },
-        "schema:performer": {
-          "@id": "https://example.com/people/jules-architect",
-          "@type": "schema:Person",
-          "schema:name": "Jules - UI/UX Architect",
-          "schema:jobTitle": "Principal Engineer"
-        }
-      },
-      {
-        "@id": "https://example.com/places/convention-center",
-        "@type": "schema:Place",
-        "schema:name": "Silicon Valley Convention Center (Detail Page)",
-        "schema:address": "150 San Carlos St, San Jose, CA 95113",
-        "schema:telephone": "+1-408-555-0199"
-      },
-      {
-        "@id": "https://example.com/people/jules-architect",
-        "@type": "schema:Person",
-        "schema:name": "Jules - UI/UX Architect (Detail Page)",
-        "schema:jobTitle": "Senior Software Architect",
-        "schema:worksFor": "Global Tech Corp",
-        "schema:sameAs": "https://github.com"
-      }
-    ]
-  };
 
   static const Map<String, dynamic> _sampleSchemaOrgVocabPayload = {
     "@context": {
@@ -188,8 +150,15 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
     super.initState();
     _store = JsonLdStore();
     _tabController = TabController(length: 3, vsync: this);
-    _loadSamplePayload(_sampleJsonLdPayload);
+    _loadPreset(_selectedPreset);
     _indexVocabularySchema(_sampleSchemaOrgVocabPayload);
+  }
+
+  void _loadPreset(String presetKey) {
+    if (JsonLdPresets.presets.containsKey(presetKey)) {
+      final payload = JsonLdPresets.presets[presetKey]!;
+      _loadSamplePayload(payload);
+    }
   }
 
   void _loadSamplePayload(Map<String, dynamic> payload) {
@@ -232,6 +201,25 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
               ],
             ),
             actions: [
+              // Preset Selector
+              DropdownButton<String>(
+                value: _selectedPreset,
+                underline: const SizedBox.shrink(),
+                icon: const Icon(Icons.collections, color: Colors.indigo),
+                items: JsonLdPresets.presets.keys.map((key) {
+                  return DropdownMenuItem(value: key, child: Text(key));
+                }).toList(),
+                onChanged: (preset) {
+                  if (preset != null) {
+                    setState(() {
+                      _selectedPreset = preset;
+                    });
+                    _loadPreset(preset);
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
+              // Language Switcher
               DropdownButton<String>(
                 value: _activeLanguage,
                 underline: const SizedBox.shrink(),
@@ -250,6 +238,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                 },
               ),
               const SizedBox(width: 8),
+              // Edit Mode Switch
               Row(
                 children: [
                   const Text('Edit Mode'),
@@ -263,22 +252,32 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                   ),
                 ],
               ),
+              IconButton(
+                icon: const Icon(Icons.copy),
+                tooltip: 'Copy Rendered Node JSON',
+                onPressed: () {
+                  if (currentNode != null) {
+                    final jsonStr = const JsonEncoder.withIndent('  ').convert(currentNode.toJson());
+                    Clipboard.setData(ClipboardData(text: jsonStr));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Copied active JSON-LD node to clipboard!')),
+                    );
+                  }
+                },
+              ),
               const SizedBox(width: 12),
             ],
           ),
           body: TabBarView(
             controller: _tabController,
             children: [
-              // Tab 1: Instance Data UI Renderer / Editor
               _buildInstanceRendererTab(state, currentNode),
-
-              // Tab 2: Schema Vocabulary Explorer
               VocabularyExplorerWidget(
                 classes: _indexedClasses,
                 properties: _indexedProperties,
                 onInstantiateClass: (template) {
                   _loadSamplePayload(template);
-                  _tabController.animateTo(0); // Switch to Instance Renderer
+                  _tabController.animateTo(0);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Generated editable UI instance for ${template['@type']}'),
@@ -287,8 +286,6 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                   );
                 },
               ),
-
-              // Tab 3: Raw JSON-LD Import / Inspection
               _buildRawJsonTab(),
             ],
           ),
@@ -309,14 +306,14 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        crossAxisAlignment: CrossAlignment.start,
+        crossAlignment: CrossAlignment.start,
         children: [
           if (state.navigationStack.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.arrow_back),
-                label: const Text('Back to Root Node'),
+                label: const Text('Back to Parent Node'),
                 onPressed: () => _store.popNavigation(),
               ),
             ),
@@ -361,7 +358,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAlignment: CrossAlignment.start,
           children: [
             Text(
               'Node Type: ${node.primaryType}',
@@ -410,10 +407,10 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                     final docType = VocabularyAnalyzer.detectDocumentType(decoded);
                     if (docType == JsonLdDocumentType.vocabulary) {
                       _indexVocabularySchema(decoded);
-                      _tabController.animateTo(1); // Move to Schema Explorer
+                      _tabController.animateTo(1);
                     } else {
                       _store.loadDocument(decoded);
-                      _tabController.animateTo(0); // Move to Instance Renderer
+                      _tabController.animateTo(0);
                     }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
