@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/json_ld_node.dart';
 import '../models/json_ld_value.dart';
+import 'property_registry.dart';
 import 'widget_registry.dart';
 
 /// Comprehensive datatype renderers for JSON-LD properties including
-/// strings, localized strings, dates, image URLs, links, nested objects, and collections.
+/// strings, localized strings, dates, image URLs, links, nested objects, collections,
+/// and pluggable property-level interceptors (`JsonLdPropertyRegistry`).
 class JsonLdPropertyRenderer extends StatelessWidget {
   final String propertyName;
   final dynamic propertyValue;
@@ -27,6 +29,20 @@ class JsonLdPropertyRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     if (propertyValue == null) {
       return const SizedBox.shrink();
+    }
+
+    // 0. Check Pluggable Property Registry Interceptor
+    final propBuilder = JsonLdPropertyRegistry().lookup(propertyName);
+    if (propBuilder != null) {
+      return propBuilder(
+        context,
+        propertyName,
+        propertyValue,
+        isEditable: isEditable,
+        activeLanguage: activeLanguage,
+        onChanged: onChanged,
+        onNodeTap: onNodeTap,
+      );
     }
 
     // 1. Single Localized or Typed Value
@@ -220,7 +236,6 @@ class JsonLdPropertyRenderer extends StatelessWidget {
   }
 
   Widget _buildNestedNodeRenderer(BuildContext context, JsonLdNode node) {
-    // Check if node is just an @id reference
     if (node.id != null && node.properties.isEmpty && node.types.isEmpty) {
       return ListTile(
         leading: const Icon(Icons.arrow_forward, color: Colors.indigo),
@@ -234,7 +249,6 @@ class JsonLdPropertyRenderer extends StatelessWidget {
       );
     }
 
-    // Custom Builder Lookup
     final builder = JsonLdWidgetRegistry().lookup(node.types);
     if (builder != null) {
       return builder(
@@ -249,7 +263,6 @@ class JsonLdPropertyRenderer extends StatelessWidget {
       );
     }
 
-    // Generic Nested Card Fallback
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6.0),
       elevation: 2,
