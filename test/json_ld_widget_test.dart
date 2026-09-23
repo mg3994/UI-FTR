@@ -107,11 +107,15 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: builder!(
-              tester.element(find.byType(Scaffold)),
-              articleNode,
-              isEditable: false,
-              activeLanguage: 'en',
+            body: Builder(
+              builder: (context) {
+                return builder!(
+                  context,
+                  articleNode,
+                  isEditable: false,
+                  activeLanguage: 'en',
+                );
+              },
             ),
           ),
         ),
