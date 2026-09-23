@@ -32,7 +32,7 @@ class _VocabularyExplorerWidgetState extends State<VocabularyExplorerWidget> {
     }).toList();
 
     return Row(
-      crossAxisAlignment: CrossAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Class Search & Selector List
         Expanded(
@@ -127,7 +127,7 @@ class _VocabularyExplorerWidgetState extends State<VocabularyExplorerWidget> {
                 : Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
-                      crossAxisAlignment: CrossAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -221,7 +221,7 @@ class _VocabularyExplorerWidgetState extends State<VocabularyExplorerWidget> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(
-              crossAxisAlignment: CrossAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (prop.comment.isNotEmpty) Text(prop.comment),
                 const SizedBox(height: 4),

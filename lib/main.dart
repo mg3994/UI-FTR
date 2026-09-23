@@ -306,7 +306,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        crossAlignment: CrossAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (state.navigationStack.isNotEmpty)
             Padding(
@@ -358,7 +358,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Node Type: ${node.primaryType}',
@@ -389,7 +389,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        crossAlignment: CrossAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

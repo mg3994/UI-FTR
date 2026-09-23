@@ -75,7 +75,7 @@ class JsonLdPropertyRenderer extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               _formatLabel(propertyName),
@@ -182,7 +182,7 @@ class JsonLdPropertyRenderer extends StatelessWidget {
             ? TextDirection.rtl
             : TextDirection.ltr,
         child: Row(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
               width: 120,
@@ -281,7 +281,7 @@ class JsonLdPropertyRenderer extends StatelessWidget {
 
   Widget _buildListRenderer(BuildContext context, List items) {
     return Column(
-      crossAxisAlignment: CrossAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
