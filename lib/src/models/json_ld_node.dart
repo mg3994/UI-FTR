@@ -209,10 +209,12 @@ class JsonLdNode {
     }
 
     if (value is List) {
-      // Return list of parsed children or LocalizedSet if all are value objects
+      // Return list of parsed children or LocalizedSet if language tags are specified
       final parsedList = value.map((item) => _parsePropertyValue(item)).toList();
-      final isAllValues = parsedList.every((e) => e is JsonLdValue);
-      if (isAllValues && parsedList.isNotEmpty) {
+      final isLocalizedSet = parsedList.isNotEmpty &&
+          parsedList.every((e) => e is JsonLdValue) &&
+          parsedList.any((e) => (e as JsonLdValue).language != null);
+      if (isLocalizedSet) {
         return JsonLdLocalizedSet(parsedList.cast<JsonLdValue>());
       }
       return parsedList;

@@ -12,10 +12,12 @@ export 'src/state/json_ld_store.dart';
 export 'src/validation/json_ld_schema_validator.dart';
 export 'src/utils/schema_code_generator.dart';
 
-// Utilities, Analyzer & Processor
+// Utilities, Analyzer, Processor, Context Resolver & Framing
 export 'src/utils/vocabulary_analyzer.dart';
 export 'src/utils/json_ld_presets.dart';
 export 'src/utils/json_ld_processor.dart';
+export 'src/utils/json_ld_context_resolver.dart';
+export 'src/utils/json_ld_framing.dart';
 
 // Theme Framework
 export 'src/theme/json_ld_theme.dart';
@@ -33,3 +35,4 @@ export 'src/widgets/recipe_widget.dart';
 export 'src/widgets/place_widget.dart';
 export 'src/widgets/review_widget.dart';
 export 'src/widgets/vocabulary_explorer_widget.dart';
+export 'src/widgets/graph_inspector_widget.dart';

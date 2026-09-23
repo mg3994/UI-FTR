@@ -9,6 +9,7 @@ import 'src/utils/schema_code_generator.dart';
 import 'src/utils/vocabulary_analyzer.dart';
 import 'src/widgets/complex_event_widget.dart';
 import 'src/widgets/datatype_renderers.dart';
+import 'src/widgets/graph_inspector_widget.dart';
 import 'src/widgets/person_widget.dart';
 import 'src/widgets/place_widget.dart';
 import 'src/widgets/product_widget.dart';
@@ -175,7 +176,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
   void initState() {
     super.initState();
     _store = JsonLdStore();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _loadPreset(_selectedPreset);
     _indexVocabularySchema(_sampleSchemaOrgVocabPayload);
   }
@@ -225,6 +226,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                 Tab(icon: Icon(Icons.schema), text: 'Schema.org Explorer'),
                 Tab(icon: Icon(Icons.code), text: 'Raw JSON Source'),
                 Tab(icon: Icon(Icons.data_object), text: 'Dart Code Generator'),
+                Tab(icon: Icon(Icons.hub), text: 'Graph & RDF Triples'),
               ],
             ),
             actions: [
@@ -312,6 +314,9 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
               ),
               _buildRawJsonTab(),
               _buildCodeGeneratorTab(currentNode),
+              currentNode != null
+                  ? GraphInspectorWidget(node: currentNode)
+                  : const Center(child: Text('No active graph node loaded.')),
             ],
           ),
         );
