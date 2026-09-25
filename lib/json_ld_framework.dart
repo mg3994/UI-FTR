@@ -1,5 +1,9 @@
 library json_ld_framework;
 
+// Core Framework & Plugins
+export 'src/framework/json_ld_app.dart';
+export 'src/framework/json_ld_plugin.dart';
+
 // Core Models
 export 'src/models/json_ld_node.dart';
 export 'src/models/json_ld_value.dart';

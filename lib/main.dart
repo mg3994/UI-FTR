@@ -1,100 +1,23 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'src/models/json_ld_node.dart';
-import 'src/models/json_ld_value.dart';
-import 'src/state/json_ld_store.dart';
-import 'src/utils/json_ld_presets.dart';
-import 'src/utils/schema_code_generator.dart';
-import 'src/utils/vocabulary_analyzer.dart';
-import 'src/widgets/complex_event_widget.dart';
-import 'src/widgets/datatype_renderers.dart';
-import 'src/widgets/graph_inspector_widget.dart';
-import 'src/widgets/keyword_matrix_widget.dart';
-import 'src/widgets/person_widget.dart';
-import 'src/widgets/place_widget.dart';
-import 'src/widgets/product_widget.dart';
-import 'src/widgets/recipe_widget.dart';
-import 'src/widgets/review_widget.dart';
-import 'src/widgets/vocabulary_explorer_widget.dart';
-import 'src/widgets/widget_registry.dart';
+import 'json_ld_framework.dart';
 
 void main() {
-  final registry = JsonLdWidgetRegistry();
+  // Initialize standard Schema.org widgets via modular plugin
+  SchemaOrgCorePlugin().register(
+    JsonLdWidgetRegistry(),
+    JsonLdPropertyRegistry(),
+  );
 
-  registry.register('schema:Event', (context, node,
-      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
-    return ComplexEventWidget(
-      node: node,
-      isEditable: isEditable,
-      activeLanguage: activeLanguage,
-      onChanged: onChanged,
-      onNodeTap: onNodeTap,
-    );
-  });
-  registry.register('Event', registry.lookup(['schema:Event'])!);
-
-  registry.register('schema:Product', (context, node,
-      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
-    return ProductWidget(
-      node: node,
-      isEditable: isEditable,
-      activeLanguage: activeLanguage,
-      onChanged: onChanged,
-      onNodeTap: onNodeTap,
-    );
-  });
-  registry.register('Product', registry.lookup(['schema:Product'])!);
-
-  registry.register('schema:Person', (context, node,
-      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
-    return PersonWidget(
-      node: node,
-      isEditable: isEditable,
-      activeLanguage: activeLanguage,
-      onChanged: onChanged,
-      onNodeTap: onNodeTap,
-    );
-  });
-  registry.register('Person', registry.lookup(['schema:Person'])!);
-
-  registry.register('schema:Recipe', (context, node,
-      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
-    return RecipeWidget(
-      node: node,
-      isEditable: isEditable,
-      activeLanguage: activeLanguage,
-      onChanged: onChanged,
-      onNodeTap: onNodeTap,
-    );
-  });
-  registry.register('Recipe', registry.lookup(['schema:Recipe'])!);
-
-  registry.register('schema:Place', (context, node,
-      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
-    return PlaceWidget(
-      node: node,
-      isEditable: isEditable,
-      activeLanguage: activeLanguage,
-      onChanged: onChanged,
-      onNodeTap: onNodeTap,
-    );
-  });
-  registry.register('Place', registry.lookup(['schema:Place'])!);
-
-  registry.register('schema:Review', (context, node,
-      {required isEditable, required activeLanguage, onChanged, onNodeTap}) {
-    return ReviewWidget(
-      node: node,
-      isEditable: isEditable,
-      activeLanguage: activeLanguage,
-      onChanged: onChanged,
-      onNodeTap: onNodeTap,
-    );
-  });
-  registry.register('Review', registry.lookup(['schema:Review'])!);
-
-  runApp(const JsonLdArchitectureApp());
+  runApp(
+    JsonLdApp(
+      initialDocument: JsonLdPresets.presets['Complex Event (Localized)'],
+      theme: JsonLdTheme.light,
+      initialLanguage: 'en',
+      child: const JsonLdArchitectureApp(),
+    ),
+  );
 }
 
 class JsonLdArchitectureApp extends StatelessWidget {
@@ -103,7 +26,7 @@ class JsonLdArchitectureApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter JSON-LD Architecture',
+      title: 'Flutter JSON-LD Architecture Framework',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
@@ -121,7 +44,6 @@ class JsonLdHomePage extends StatefulWidget {
 }
 
 class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProviderStateMixin {
-  late final JsonLdStore _store;
   late final TabController _tabController;
   final TextEditingController _rawJsonTextController = TextEditingController();
 
@@ -176,21 +98,20 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _store = JsonLdStore();
     _tabController = TabController(length: 6, vsync: this);
-    _loadPreset(_selectedPreset);
     _indexVocabularySchema(_sampleSchemaOrgVocabPayload);
   }
 
-  void _loadPreset(String presetKey) {
+  void _loadPreset(BuildContext context, String presetKey) {
     if (JsonLdPresets.presets.containsKey(presetKey)) {
       final payload = JsonLdPresets.presets[presetKey]!;
-      _loadSamplePayload(payload);
+      _loadSamplePayload(context, payload);
     }
   }
 
-  void _loadSamplePayload(Map<String, dynamic> payload) {
-    _store.loadDocument(payload);
+  void _loadSamplePayload(BuildContext context, Map<String, dynamic> payload) {
+    final scope = JsonLdScope.of(context);
+    scope?.store.loadDocument(payload);
     _rawJsonTextController.text = const JsonEncoder.withIndent('  ').convert(payload);
   }
 
@@ -204,7 +125,6 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
 
   @override
   void dispose() {
-    _store.dispose();
     _tabController.dispose();
     _rawJsonTextController.dispose();
     super.dispose();
@@ -212,14 +132,21 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final scope = JsonLdScope.of(context);
+    final store = scope?.store;
+
+    if (store == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return ValueListenableBuilder<JsonLdState>(
-      valueListenable: _store,
+      valueListenable: store,
       builder: (context, state, child) {
         final currentNode = state.currentNode;
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Flutter JSON-LD Architecture & Schema.org Platform'),
+            title: const Text('Flutter JSON-LD Architecture Framework'),
             bottom: TabBar(
               controller: _tabController,
               isScrollable: true,
@@ -245,7 +172,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                     setState(() {
                       _selectedPreset = preset;
                     });
-                    _loadPreset(preset);
+                    _loadPreset(context, preset);
                   }
                 },
               ),
@@ -300,12 +227,12 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
           body: TabBarView(
             controller: _tabController,
             children: [
-              _buildInstanceRendererTab(state, currentNode),
+              _buildInstanceRendererTab(store, state, currentNode),
               VocabularyExplorerWidget(
                 classes: _indexedClasses,
                 properties: _indexedProperties,
                 onInstantiateClass: (template) {
-                  _loadSamplePayload(template);
+                  _loadSamplePayload(context, template);
                   _tabController.animateTo(0);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -315,14 +242,14 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                   );
                 },
               ),
-              _buildRawJsonTab(),
+              _buildRawJsonTab(context, store),
               _buildCodeGeneratorTab(currentNode),
               currentNode != null
                   ? GraphInspectorWidget(node: currentNode)
                   : const Center(child: Text('No active graph node loaded.')),
               KeywordMatrixWidget(
                 onLoadPayload: (payload) {
-                  _loadSamplePayload(payload);
+                  _loadSamplePayload(context, payload);
                   _tabController.animateTo(0);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Loaded keyword demo payload into Main Renderer!')),
@@ -336,7 +263,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
     );
   }
 
-  Widget _buildInstanceRendererTab(JsonLdState state, JsonLdNode? currentNode) {
+  Widget _buildInstanceRendererTab(JsonLdStore store, JsonLdState state, JsonLdNode? currentNode) {
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -356,11 +283,11 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.arrow_back),
                 label: const Text('Back to Parent Node'),
-                onPressed: () => _store.popNavigation(),
+                onPressed: () => store.popNavigation(),
               ),
             ),
           if (currentNode != null)
-            _renderNode(context, currentNode)
+            _renderNode(context, store, currentNode)
           else
             const Text('No content available.'),
         ],
@@ -368,21 +295,21 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
     );
   }
 
-  Widget _renderNode(BuildContext context, JsonLdNode node) {
+  Widget _renderNode(BuildContext context, JsonLdStore store, JsonLdNode node) {
     if (node.isGraph) {
       return Column(
         children: node.graphNodes.map((childNode) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
-            child: _renderSingleNode(context, childNode),
+            child: _renderSingleNode(context, store, childNode),
           );
         }).toList(),
       );
     }
-    return _renderSingleNode(context, node);
+    return _renderSingleNode(context, store, node);
   }
 
-  Widget _renderSingleNode(BuildContext context, JsonLdNode node) {
+  Widget _renderSingleNode(BuildContext context, JsonLdStore store, JsonLdNode node) {
     final builder = JsonLdWidgetRegistry().lookup(node.types);
     if (builder != null) {
       return builder(
@@ -390,8 +317,8 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
         node,
         isEditable: _isEditable,
         activeLanguage: _activeLanguage,
-        onChanged: (updated) => _store.updateNode(updated),
-        onNodeTap: (id) => _store.navigateToId(id),
+        onChanged: (updated) => store.updateNode(updated),
+        onNodeTap: (id) => store.navigateToId(id),
       );
     }
 
@@ -414,10 +341,10 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                 propertyValue: entry.value,
                 isEditable: _isEditable,
                 activeLanguage: _activeLanguage,
-                onNodeTap: (id) => _store.navigateToId(id),
+                onNodeTap: (id) => store.navigateToId(id),
                 onChanged: (updatedVal) {
                   final updatedNode = node.copyWithProperty(entry.key, updatedVal);
-                  _store.updateNode(updatedNode);
+                  store.updateNode(updatedNode);
                 },
               );
             }),
@@ -427,7 +354,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
     );
   }
 
-  Widget _buildRawJsonTab() {
+  Widget _buildRawJsonTab(BuildContext context, JsonLdStore store) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -451,7 +378,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
                       _indexVocabularySchema(decoded);
                       _tabController.animateTo(1);
                     } else {
-                      _store.loadDocument(decoded);
+                      store.loadDocument(decoded);
                       _tabController.animateTo(0);
                     }
                   } catch (e) {
