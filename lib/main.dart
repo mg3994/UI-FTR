@@ -10,6 +10,7 @@ import 'src/utils/vocabulary_analyzer.dart';
 import 'src/widgets/complex_event_widget.dart';
 import 'src/widgets/datatype_renderers.dart';
 import 'src/widgets/graph_inspector_widget.dart';
+import 'src/widgets/keyword_matrix_widget.dart';
 import 'src/widgets/person_widget.dart';
 import 'src/widgets/place_widget.dart';
 import 'src/widgets/product_widget.dart';
@@ -176,7 +177,7 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
   void initState() {
     super.initState();
     _store = JsonLdStore();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
     _loadPreset(_selectedPreset);
     _indexVocabularySchema(_sampleSchemaOrgVocabPayload);
   }
@@ -221,12 +222,14 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
             title: const Text('Flutter JSON-LD Architecture & Schema.org Platform'),
             bottom: TabBar(
               controller: _tabController,
+              isScrollable: true,
               tabs: const [
                 Tab(icon: Icon(Icons.dashboard), text: 'Instance Renderer'),
                 Tab(icon: Icon(Icons.schema), text: 'Schema.org Explorer'),
                 Tab(icon: Icon(Icons.code), text: 'Raw JSON Source'),
                 Tab(icon: Icon(Icons.data_object), text: 'Dart Code Generator'),
                 Tab(icon: Icon(Icons.hub), text: 'Graph & RDF Triples'),
+                Tab(icon: Icon(Icons.key), text: 'JSON-LD Keywords & Semantics'),
               ],
             ),
             actions: [
@@ -317,6 +320,15 @@ class _JsonLdHomePageState extends State<JsonLdHomePage> with SingleTickerProvid
               currentNode != null
                   ? GraphInspectorWidget(node: currentNode)
                   : const Center(child: Text('No active graph node loaded.')),
+              KeywordMatrixWidget(
+                onLoadPayload: (payload) {
+                  _loadSamplePayload(payload);
+                  _tabController.animateTo(0);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Loaded keyword demo payload into Main Renderer!')),
+                  );
+                },
+              ),
             ],
           ),
         );

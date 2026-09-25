@@ -36,3 +36,4 @@ export 'src/widgets/place_widget.dart';
 export 'src/widgets/review_widget.dart';
 export 'src/widgets/vocabulary_explorer_widget.dart';
 export 'src/widgets/graph_inspector_widget.dart';
+export 'src/widgets/keyword_matrix_widget.dart';
